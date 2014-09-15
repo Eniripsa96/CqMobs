@@ -21,7 +21,8 @@ import org.bukkit.plugin.java.JavaPlugin;
  */
 public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
 
-    Config mobConfig; //Configuration file
+    private Config mobConfig; //Configuration file
+    private static HoloUtils holoUtility; //Holo util
 
     /**
      * Sets up config file, generates defaults if needed. Enables handlers
@@ -32,7 +33,8 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
         mobConfig = new Config(this, "Spawning" + File.separator + "MobSpawns"); //File should be located under Spawning/MobSpawns.yml
         mobConfig.saveDefaultConfig();
         setDefaults(mobConfig.getConfig());;
-        setConfigForWorlds();
+        setConfigForWorlds(); //Generates default config on first use
+        generateNewConfig(); //Generates v0.2 config on first use
         mobConfig.saveConfig();
 
         //Handler Operations
@@ -59,30 +61,31 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
 
         //Mob Handlers
         this.getLogger().info("Enabling Mob Handlers");
-        new MobSpawnHandler(this);
-        new MobDamageHandler(this);
+        MobSpawnHandler mobSpawnHandler = new MobSpawnHandler(this);
+        MobDamageHandler mobDamageHandler = new MobDamageHandler(this);
 
         //Mob Arena Handler
         if (getMobArena() != null && mobConfig.getConfig().getBoolean("MobArenaWaveLeveling", false)) {
-            new MobArenaHandler(this);
+            MobArenaHandler mobArenaHandler = new MobArenaHandler(this);
         } else {
             this.getLogger().info("MobArena not detected or is disabled, MobArena Handler not enabled!");
         }
-
+        
+        //Experience Handlers
         if (mobConfig.getConfig().contains("ExperiencePerLevel") && mobConfig.getConfig().getDouble("ExperiencePerLevel") > 0.0) {
             if (mobConfig.getConfig().contains("HeroesExperience") && mobConfig.getConfig().getBoolean("HeroesExperience")) {
-                new HeroesExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"), mobConfig.getConfig().getBoolean("MobArenaExperience", false), mobConfig.getConfig().getDouble("MobArenaExperienceScale", 0.0));
+                HeroesExperienceHandler heroesExperienceHandler = new HeroesExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"), mobConfig.getConfig().getBoolean("MobArenaExperience", false), mobConfig.getConfig().getDouble("MobArenaExperienceScale", 0.0), mobConfig.getConfig().getBoolean("MoneyDrop", true), mobConfig.getConfig().getBoolean("HoloUtils", true));
             } else if (mobConfig.getConfig().contains("SkillAPIExperience") && mobConfig.getConfig().getBoolean("SkillAPIExperience")) {
-                new SkillAPIExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"));
+                SkillAPIExperienceHandler skillAPIExperienceHandler = new SkillAPIExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"));
             } else {
-                new MobExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"));
+                MobExperienceHandler mobExperienceHandler = new MobExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"));
             }
         }
         
         
         //Hologram Utilities
         if (mobConfig.getConfig().contains("HologramUtils") && mobConfig.getConfig().getBoolean("HologramUtils") && Bukkit.getPluginManager().getPlugin("HolographicDisplays") != null) {
-            HoloUtils holoUtility = new HoloUtils(this);
+            holoUtility = new HoloUtils(this);
         } else {
             this.getLogger().info("Hologram Utils NOT enabled! Either disabled in config, or HolographicDisplays not present");
         }
@@ -199,5 +202,26 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
             mobConfig.getConfig().set("Worlds", worlds);
 
         }
+    }
+    
+    /**
+     * Generates v0.2 config on first time use
+     */
+    public void generateNewConfig() {
+        
+        if (!mobConfig.getConfig().contains("MoneyDrops")) {
+            mobConfig.getConfig().createSection("MoneyDrops");
+            mobConfig.getConfig().set("MoneyDrops", true);
+        }
+        
+        if (!mobConfig.getConfig().contains("HologramUtils")) {
+            mobConfig.getConfig().createSection("HologramUtils");
+            mobConfig.getConfig().set("HologramUtils", true);
+        }
+        
+    }
+    
+    public static HoloUtils getHoloUtil() {
+        return holoUtility;
     }
 }
