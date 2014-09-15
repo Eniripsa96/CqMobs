@@ -15,51 +15,45 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
+ * Controls the enabling and disabling of the plugin
  *
  * @author ferrago
  */
 public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
-    
-    Config mobConfig;
-    
+
+    Config mobConfig; //Configuration file
+
     /**
-     * Registers this as a listener, and turns on handlers.
-     * 
+     * Sets up config file, generates defaults if needed. Enables handlers
      */
     @Override
-    public void onEnable()
-    {
-        mobConfig = new Config(this, "Spawning" + File.separator + "MobSpawns");
+    public void onEnable() {
+        //Config Operations
+        mobConfig = new Config(this, "Spawning" + File.separator + "MobSpawns"); //File should be located under Spawning/MobSpawns.yml
         mobConfig.saveDefaultConfig();
         setDefaults(mobConfig.getConfig());;
         setConfigForWorlds();
         mobConfig.saveConfig();
+
+        //Handler Operations
         TurnOnHandlers();
-        Bukkit.getScheduler().runTaskLater(this, new Runnable() {
-            public void run() {
-                RefreshMobs();
-                }
-        }, 2400);
-            
+
+        //Lets the user know that we successfully enabled this plugin
         getLogger().info("ConquestiaMobs Enabled!");
     }
-    
+
     @Override
-    public void onDisable()
-    {
+    public void onDisable() {
+        //Unregisters unneeded handlers, then alerts server the plugin was successfully disabled
         HandlerList.unregisterAll(this);
         getLogger().info("ConquestiaMobs Disabled!");
     }
-    
+
     /**
-     * TurnOnHandlers
-     * 
-     * Initializes all utilized handlers to help keep
-     * OnEnable clean and easily readable.
-     * 
+     * Initializes all utilized handlers to help keep OnEnable clean and easily
+     * readable.
      */
-    public void TurnOnHandlers()
-    {
+    public void TurnOnHandlers() {
         //Command Handler
         CqmCommandHandler commander = new CqmCommandHandler(this);
 
@@ -67,106 +61,88 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
         this.getLogger().info("Enabling Mob Handlers");
         new MobSpawnHandler(this);
         new MobDamageHandler(this);
-        
+
         //Mob Arena Handler
-        if (getMobArena() != null && mobConfig.getConfig().getBoolean("MobArenaWaveLeveling", false))
-        {
+        if (getMobArena() != null && mobConfig.getConfig().getBoolean("MobArenaWaveLeveling", false)) {
             new MobArenaHandler(this);
-        }
-        else
-        {
+        } else {
             this.getLogger().info("MobArena not detected or is disabled, MobArena Handler not enabled!");
         }
-        
-        if(mobConfig.getConfig().contains("ExperiencePerLevel") && mobConfig.getConfig().getDouble("ExperiencePerLevel") > 0.0)
-        {
+
+        if (mobConfig.getConfig().contains("ExperiencePerLevel") && mobConfig.getConfig().getDouble("ExperiencePerLevel") > 0.0) {
             if (mobConfig.getConfig().contains("HeroesExperience") && mobConfig.getConfig().getBoolean("HeroesExperience")) {
                 new HeroesExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"), mobConfig.getConfig().getBoolean("MobArenaExperience", false), mobConfig.getConfig().getDouble("MobArenaExperienceScale", 0.0));
-            }
-            else if(mobConfig.getConfig().contains("SkillAPIExperience") && mobConfig.getConfig().getBoolean("SkillAPIExperience")) {
+            } else if (mobConfig.getConfig().contains("SkillAPIExperience") && mobConfig.getConfig().getBoolean("SkillAPIExperience")) {
                 new SkillAPIExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"));
-            }
-            else {
+            } else {
                 new MobExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"));
             }
         }
         
+        
+        //Hologram Utilities
         if (mobConfig.getConfig().contains("HologramUtils") && mobConfig.getConfig().getBoolean("HologramUtils") && Bukkit.getPluginManager().getPlugin("HolographicDisplays") != null) {
             HoloUtils holoUtility = new HoloUtils(this);
         } else {
             this.getLogger().info("Hologram Utils NOT enabled! Either disabled in config, or HolographicDisplays not present");
         }
+        
+        //Lets server know that the handlers were successfully enabled
         this.getLogger().info("Mob Handlers Enabled!");
     }
-    
-    
+
     /**
+     * If MobArena is not on the server this returns null, otherwise it return
+     * MobArena plugin.
      * 
-     * If MobArena is not on the server this returns null,
-     * otherwise it return MobArena.
-     * 
-     * @return MobArena
+     * @return MobArena The instance of MobArena running on the server
      */
-    public static Plugin getMobArena()
-    {
-        if (Bukkit.getPluginManager().getPlugin("MobArena") != null)
-        {
+    public static Plugin getMobArena() {
+        if (Bukkit.getPluginManager().getPlugin("MobArena") != null) {
             return Bukkit.getPluginManager().getPlugin("MobArena");
-        }
-        else
-        {
+        } else {
             return null;
         }
     }
-    
-    
+
     /**
-     * <p>Applies default values to a configuration section</p>
-     * <p>This copies over all unset default values that were added</p>
+     * Applies default values to a configuration section
+     * This copies over all unset default values that were added
      *
      * @param config configuration section to apply default values for
      */
     private void setDefaults(ConfigurationSection config) {
-        if (config.getDefaultSection() == null) return;
+        if (config.getDefaultSection() == null) {
+            return;
+        }
         for (String key : config.getDefaultSection().getKeys(false)) {
             if (config.isConfigurationSection(key)) {
                 setDefaults(config.getConfigurationSection(key));
-            }
-            else if (!config.isSet(key)) {
+            } else if (!config.isSet(key)) {
                 config.set(key, config.get(key));
             }
         }
     }
-    
+
     /**
-     * 
      * Removes all monsters from the server.
-     * 
      */
-    public void RefreshMobs()
-    {
-        for (World world : Bukkit.getServer().getWorlds())
-        {
-            for (LivingEntity le : world.getLivingEntities())
-            {
-                if (MobSpawnHandler.getNotExemptEntities().contains(le.getType()))
-                {
+    public void RefreshMobs() {
+        for (World world : Bukkit.getServer().getWorlds()) {
+            for (LivingEntity le : world.getLivingEntities()) {
+                if (MobSpawnHandler.getNotExemptEntities().contains(le.getType())) {
                     le.remove();
                 }
             }
         }
     }
-    
+
     /**
-     * If the default config is generated create
-     * 2 sample spawn points for every world on
-     * the server.
-     * 
+     * If the default config is generated create 2 sample spawn points for every
+     * world on the server and generate all default values.
      */
-    public void setConfigForWorlds()
-    {
-        if (mobConfig.getConfig().getList("Worlds").contains("Example") && mobConfig.getConfig().getList("Worlds").size() < 2)
-        {
+    public void setConfigForWorlds() {
+        if (mobConfig.getConfig().getList("Worlds").contains("Example") && mobConfig.getConfig().getList("Worlds").size() < 2) {
             this.getLogger().info("Default config found! Generating example settings for your worlds.");
             ArrayList<String> worlds = new ArrayList<String>();
             mobConfig.getConfig().createSection("ExperiencePerLevel");
@@ -185,8 +161,7 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
             mobConfig.getConfig().set("MoneyDrop", true);
             mobConfig.getConfig().createSection("HologramUtils");
             mobConfig.getConfig().set("HologramUtils", true);
-            for (World world : Bukkit.getServer().getWorlds())
-            {
+            for (World world : Bukkit.getServer().getWorlds()) {
                 worlds.add(world.getName());
                 mobConfig.getConfig().createSection(world.getName());
                 mobConfig.getConfig().createSection(world.getName() + ".MobArenaWaveLeveling");
@@ -222,7 +197,7 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
                 mobConfig.getConfig().set(world.getName() + ".spawnLocations.spawn2.z", 100.0);
             }
             mobConfig.getConfig().set("Worlds", worlds);
-            
+
         }
     }
 }
