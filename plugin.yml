@@ -1,0 +1,18 @@
+name: ConquestiaMobs
+main: com.conquestia.mobs.ConquestiaMobs
+version: 0.1.6
+author: Ultiferrago
+
+commands:
+   cqm:
+      description: Controls all Conquestia Mob Commands.
+      permission: conquestiamobs.admin
+      permission-message: You don't have permission for that command!
+
+permissions:
+  conquestiamobs.admin:
+    default: op
+    
+
+
+
