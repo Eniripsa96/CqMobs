@@ -5,6 +5,7 @@ import com.herocraftonline.heroes.api.events.ExperienceChangeEvent;
 import com.herocraftonline.heroes.api.events.HeroKillCharacterEvent;
 import com.herocraftonline.heroes.characters.Hero;
 import com.herocraftonline.heroes.characters.classes.HeroClass.ExperienceType;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 import net.milkbowl.vault.economy.Economy;
@@ -22,50 +23,90 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
 /**
- *
+ * Handles Heroes plugin experience for custom mob kills
  * @author ferrago
  */
 public class HeroesExperienceHandler implements Listener {
 
-    private final double xpScale;
-    Plugin plugin;
-    private final HashMap<Player, LivingEntity> mobKillMap = new HashMap<>();
-    private final HashMap<EntityType, Double> typeCost = new HashMap<>();
-    double levelCost = 0.1;
-    public static HashMap<Player, LivingEntity> mobArenaKillMap = new HashMap();
+    //User Settings
+    private final double xpScale; //xp factor used to increase xp for higher level mobs.
     private final boolean maEnabled;
     private final double maScale;
-    private Economy econ;
-    private final Heroes heroes;
+    private final boolean holograms;
+    private final boolean moneyDrops;
+    double levelCost = 0.1;
+    
+    //Plugin Instances
+    Plugin CqMobs; //Instance of Cq Mobs
+    private Economy econ; //Instance of the servers economy
+    private final Heroes heroes;// Instance of Heroes
+    
+    //Data Maps
+    private final HashMap<Player, LivingEntity> mobKillMap = new HashMap<>(); //Used to help compute accurate solo/party xp
+    private final HashMap<EntityType, Double> typeCost = new HashMap<>(); //Initial xp drops for mob types
+    public static HashMap<Player, LivingEntity> mobArenaKillMap = new HashMap(); //Used to calculate modified xp for arena mobs
 
-    public HeroesExperienceHandler(Plugin plugin, double experienceScale, boolean maEnabled, double maScale) {
-        Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
-        this.xpScale = experienceScale;
-        this.plugin = plugin;
-        this.maEnabled = maEnabled;
-        this.maScale = maScale;
+
+    /**
+     * Instantiate variables, Register services
+     * 
+     * @param CqMobs Calling plugin
+     * @param experienceScale Config option expScale
+     * @param maEnabled Is Ma Enabled?
+     * @param maScale Mob Arena modifier factor
+     */
+    public HeroesExperienceHandler(Plugin CqMobs, double experienceScale, boolean maEnabled, double maScale, boolean moneyDrops, boolean holograms) {
+        
+        //Registration
+        Bukkit.getServer().getPluginManager().registerEvents(this, CqMobs);
         RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
         if (rsp != null) {
             econ = rsp.getProvider();
         }
-        buildMoneyDrops();
+        
+        //Instantiation
+        this.xpScale = experienceScale;
+        this.CqMobs = CqMobs;
+        this.maEnabled = maEnabled;
+        this.maScale = maScale;
+        this.moneyDrops = moneyDrops;
+        this.holograms = holograms;
         heroes = (Heroes) Bukkit.getPluginManager().getPlugin("Heroes");
+        
+        //Fill money map
+        if (moneyDrops) {
+            buildMoneyDrops();
+        }
+        
     }
 
+    /**
+     * Handles what happens when a player kills a mob
+     * 
+     * @param event Triggering event
+     */
     @EventHandler
     public void onHeroMobDeath(HeroKillCharacterEvent event) {
-        if (!(event.getDefender().getEntity() instanceof Player) && !event.getDefender().getEntity().hasMetadata("Spawner")) {
-            boolean showDeath = true;
-            String entityName = ChatColor.stripColor(event.getDefender().getEntity().getCustomName());
+        
+        //If the killer is not a player, or if the mob was spawned from a mob spawner, we don't calculate the exp here
+        if (!(event.getDefender().getEntity() instanceof Player) && !event.getDefender().getEntity().hasMetadata("Spawner")) { 
             
+            boolean showDeath = true; //Always start off by setting this to true
+            
+            String entityName = ChatColor.stripColor(event.getDefender().getEntity().getCustomName()); //We need the name without fancy colors to compute the level
+            
+            //If the defender is a monster && they have a level
             if (event.getDefender().getEntity() instanceof Monster && entityName != null && entityName.toLowerCase().contains("lvl:")) {
-                mobKillMap.put(event.getAttacker().getPlayer(), event.getDefender().getEntity());
-                double maxMoneyDrop = 0;
-                int level = Integer.parseInt(entityName.substring(entityName.indexOf(":") + 2, entityName.indexOf("]")));
+                mobKillMap.put(event.getAttacker().getPlayer(), event.getDefender().getEntity()); // Put the hero and the mob into our data map
+                double maxMoneyDrop = 0; //Do we want there to be a money cap?
+                int level = Integer.parseInt(entityName.substring(entityName.indexOf(":") + 2, entityName.indexOf("]"))); // Get the level from their name
+                
+                //Calculate random money drop
                 Random rand = new Random();
                 maxMoneyDrop = (level * levelCost * typeCost.get(event.getDefender().getEntity().getType())) + typeCost.get(event.getDefender().getEntity().getType());
                 double moneyDrop = maxMoneyDrop * rand.nextDouble();
 
+                //Calculate experience for party members
                 if (event.getAttacker().hasParty()) {
                     for (Hero hero : event.getAttacker().getParty().getMembers()) {
                         if (event.getAttacker().getPlayer().getLocation().distanceSquared(hero.getPlayer().getLocation()) < 900) {
@@ -80,36 +121,54 @@ public class HeroesExperienceHandler implements Listener {
                 } else {
                     econ.depositPlayer(event.getAttacker().getPlayer().getName(), moneyDrop);
                 }
-
-                if (ConquestiaMobs.getMobArena() != null && ConquestiaMobs.getMobArena().getArenaMaster().getArenaAtLocation(event.getDefender().getEntity().getLocation()) != null) {
+                
+                //Mob Arena experience drops
+                if (maEnabled && ConquestiaMobs.getMobArena() != null && ((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaAtLocation(event.getDefender().getEntity().getLocation()) != null) {
                     mobArenaKillMap.put(event.getAttacker().getPlayer(), event.getDefender().getEntity());
-                    Arena arena = ConquestiaMobs.getMobArena().getArenaMaster().getArenaWithPlayer(event.getAttacker().getPlayer());
+                    com.garbagemule.MobArena.framework.Arena arena = ((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaWithPlayer(event.getAttacker().getPlayer());
                     moneyDrop = 0;
                     showDeath = false;
                     for (Hero hero : event.getAttacker().getParty().getMembers()) {
 
-                        if (ConquestiaMobs.getMobArena().getArenaMaster().getArenaWithPlayer(hero.getPlayer()) != null && ConquestiaMobs.getMobArena().getArenaMaster().getArenaWithPlayer(hero.getPlayer()) == arena) {
+                        if (((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaWithPlayer(hero.getPlayer()) != null && ((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaWithPlayer(hero.getPlayer()) == arena) {
                             mobArenaKillMap.put(hero.getPlayer(), event.getDefender().getEntity());
                         }
 
                     }
                 }
                 
-                if (showDeath) {
+                //Display xp/money holograms
+                if (showDeath && holograms) {
                     double xp =  heroes.getCharacterManager().getMonster(event.getDefender().getEntity()).getExperience() * level * xpScale;
-                    xp = xp * -3;
                     
+                    //@Research
+                    xp *= -3; //Don't know why this works...Research later
+                    
+                    //If Hero has party send xp to all players
                     if (event.getAttacker().hasParty()) {
                         xp = (xp * 2) / event.getAttacker().getParty().getMembers().size();
+                        ArrayList<Player> party = new ArrayList<>();
+                        for (Hero hero : event.getAttacker().getParty().getMembers()) {
+                            party.add(hero.getPlayer());
+                        }
+                        ConquestiaMobs.getHoloUtil().sendPartyHologram(event.getDefender().getEntity().getEyeLocation(), party, xp, moneyDrop, level);
+                    }   else { // else only show xp to single player
+                        ConquestiaMobs.getHoloUtil().sendSoloHologram(event.getDefender().getEntity().getEyeLocation(), event.getAttacker().getPlayer(), xp, moneyDrop, 5);
                     }
                     
-                    ConquestiaUtilities.getHoloUtil().sendDeathHologram(event.getDefender().getEntity().getEyeLocation(), xp, moneyDrop, 5);
+                    
+                    
+                    
                 }
 
             }
         }
     }
 
+    /**
+     * Sets default money drops for base level mob
+     * Will make this configurable in next patch.
+     */
     public void buildMoneyDrops() {
         typeCost.put(EntityType.CAVE_SPIDER, 0.1);
         typeCost.put(EntityType.BLAZE, 0.1);
@@ -126,6 +185,12 @@ public class HeroesExperienceHandler implements Listener {
             
     }
 
+    /**
+     * When the experience is calculated for the player, modify
+     * it to reflect the appropriate experience.
+     * 
+     * @param event Triggering event
+     */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onHeroExpChange(ExperienceChangeEvent event) {
         if (event.getSource() == ExperienceType.KILLING && mobKillMap.containsKey(event.getHero().getPlayer())) {
