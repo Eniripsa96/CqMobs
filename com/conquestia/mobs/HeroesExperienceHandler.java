@@ -42,9 +42,9 @@ public class HeroesExperienceHandler implements Listener {
     private final Heroes heroes;// Instance of Heroes
     
     //Data Maps
-    private final HashMap<Player, LivingEntity> mobKillMap = new HashMap<>(); //Used to help compute accurate solo/party xp
+    private final HashMap<String, LivingEntity> mobKillMap = new HashMap<>(); //Used to help compute accurate solo/party xp
     private final HashMap<EntityType, Double> typeCost = new HashMap<>(); //Initial xp drops for mob types
-    public static HashMap<Player, LivingEntity> mobArenaKillMap = new HashMap(); //Used to calculate modified xp for arena mobs
+    public static HashMap<String, LivingEntity> mobArenaKillMap = new HashMap(); //Used to calculate modified xp for arena mobs
 
 
     /**
@@ -97,7 +97,7 @@ public class HeroesExperienceHandler implements Listener {
             
             //If the defender is a monster && they have a level
             if (event.getDefender().getEntity() instanceof Monster && entityName != null && entityName.toLowerCase().contains("lvl:")) {
-                mobKillMap.put(event.getAttacker().getPlayer(), event.getDefender().getEntity()); // Put the hero and the mob into our data map
+                mobKillMap.put(event.getAttacker().getPlayer().getUniqueId().toString(), event.getDefender().getEntity()); // Put the hero and the mob into our data map
                 double maxMoneyDrop = 0; //Do we want there to be a money cap?
                 int level = Integer.parseInt(entityName.substring(entityName.indexOf(":") + 2, entityName.indexOf("]"))); // Get the level from their name
                 
@@ -110,7 +110,7 @@ public class HeroesExperienceHandler implements Listener {
                 if (event.getAttacker().hasParty()) {
                     for (Hero hero : event.getAttacker().getParty().getMembers()) {
                         if (event.getAttacker().getPlayer().getLocation().distanceSquared(hero.getPlayer().getLocation()) < 900) {
-                            mobKillMap.put(hero.getPlayer(), event.getDefender().getEntity());
+                            mobKillMap.put(hero.getPlayer().getUniqueId().toString(), event.getDefender().getEntity());
                             if (econ != null) {
                                 
                                 moneyDrop = (moneyDrop / event.getAttacker().getParty().getMembers().size());
@@ -124,14 +124,14 @@ public class HeroesExperienceHandler implements Listener {
                 
                 //Mob Arena experience drops
                 if (maEnabled && ConquestiaMobs.getMobArena() != null && ((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaAtLocation(event.getDefender().getEntity().getLocation()) != null) {
-                    mobArenaKillMap.put(event.getAttacker().getPlayer(), event.getDefender().getEntity());
+                    mobArenaKillMap.put(event.getAttacker().getPlayer().getUniqueId().toString(), event.getDefender().getEntity());
                     com.garbagemule.MobArena.framework.Arena arena = ((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaWithPlayer(event.getAttacker().getPlayer());
                     moneyDrop = 0;
                     showDeath = false;
                     for (Hero hero : event.getAttacker().getParty().getMembers()) {
 
                         if (((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaWithPlayer(hero.getPlayer()) != null && ((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaWithPlayer(hero.getPlayer()) == arena) {
-                            mobArenaKillMap.put(hero.getPlayer(), event.getDefender().getEntity());
+                            mobArenaKillMap.put(hero.getPlayer().getUniqueId().toString(), event.getDefender().getEntity());
                         }
 
                     }
@@ -184,6 +184,16 @@ public class HeroesExperienceHandler implements Listener {
         typeCost.put(EntityType.SLIME, 0.05);
             
     }
+    
+    /**
+     * Retrieve the monsters level from it's name string.
+     * 
+     * @param entityName the name to parse for the level
+     * @return returns the monster's level
+     */
+    private int getMobLevel(String entityName) {
+        return Integer.parseInt(entityName.substring(entityName.indexOf(":") + 2, entityName.indexOf("]")));
+    }
 
     /**
      * When the experience is calculated for the player, modify
@@ -193,16 +203,16 @@ public class HeroesExperienceHandler implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onHeroExpChange(ExperienceChangeEvent event) {
-        if (event.getSource() == ExperienceType.KILLING && mobKillMap.containsKey(event.getHero().getPlayer())) {
-            LivingEntity ent = mobKillMap.get(event.getHero().getPlayer());
+        if (event.getSource() == ExperienceType.KILLING && mobKillMap.containsKey(event.getHero().getPlayer().getUniqueId().toString())) {
+            LivingEntity ent = mobKillMap.get(event.getHero().getPlayer().getUniqueId().toString());
             String entityName = ChatColor.stripColor(ent.getCustomName());
-            int level = Integer.parseInt(entityName.substring(entityName.indexOf(":") + 2, entityName.indexOf("]")));
-            if (mobArenaKillMap.containsKey(event.getHero().getPlayer())) {
-                event.setExpGain(event.getExpChange() * level * xpScale * maScale);
+            int level = getMobLevel(entityName);
+            if (mobArenaKillMap.containsKey(event.getHero().getPlayer().getUniqueId().toString())) {
+                event.setExpGain(event.getExpChange() + (level * xpScale * maScale * event.getExpChange()));
             } else {
-                event.setExpGain(event.getExpChange() * level * xpScale);
+                event.setExpGain(event.getExpChange() + (level * xpScale * event.getExpChange()));
             }
-            mobKillMap.remove(event.getHero().getPlayer());
+            mobKillMap.remove(event.getHero().getPlayer().getUniqueId().toString());
         }
     }
 
