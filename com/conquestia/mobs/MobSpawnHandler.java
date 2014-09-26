@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.conquestia.mobs;
 
 import com.conquestia.mobs.Config.Config;
@@ -22,28 +18,49 @@ import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- *
+ * Handles the spawning of mobs. Calculates a 
+ * level depending on distance from the closes 
+ * spawn point. Sets the mobs name to show the
+ * corresponding level.
+ * 
  * @author ferrago
  */
 public class MobSpawnHandler implements Listener {
 
-    private static ArrayList<EntityType> notExempt = new ArrayList<EntityType>();
-    Config mobConfig;
+    private static ArrayList<EntityType> notExempt = new ArrayList<EntityType>(); //List of mobs that we want to have a level
+    ConquestiaMobs cqm; //Instance of instantiating plugin, used for non static methods we might need access to.
+    
+    Config mobConfig; //Users configuration file used to load spawn points and other settings.
+    
+    //User configuration settings
     Double distancePerLevel;
     Double healthMultiplier;
-    ConquestiaMobs cqm;
 
+    /**
+     * Constructor for creation of this handler. Initialize variables
+     * load config, and register events.
+     * 
+     * @param plugin Calling plugin that creates this handler.
+     */
     public MobSpawnHandler(JavaPlugin plugin) {
         cqm = (ConquestiaMobs) plugin;
         mobConfig = new Config(plugin, "Spawning" + File.separator + "MobSpawns");
         Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
         addNotExemptEntities();
     }
-
+    
+    /**
+     * Getter method for retrieving which entities 
+     * we want to alter the spawn of.
+     * 
+     * @return Non exempt entities. 
+     */
     public static ArrayList<EntityType> getNotExemptEntities() {
         return notExempt;
     }
 
+    //Just provide a consise way of creating the list of non exempt entites
+    //Potentially might be used to allow users the option of which mobs to exempt.
     private static void addNotExemptEntities() {
         notExempt.add(EntityType.BLAZE);
         notExempt.add(EntityType.CAVE_SPIDER);
@@ -64,6 +81,14 @@ public class MobSpawnHandler implements Listener {
         notExempt.add(EntityType.ZOMBIE);
     }
 
+    /**
+     * Uses a basic algorithm to compute the closest designated spawn location
+     * to the monster that is spawning.
+     * 
+     * @param spawnPoints List of spawn points to use in calculations
+     * @param eventLoc Where the monster spawned
+     * @return The location from the spawnPoints list that is closest to our event location. Returns null if spawns is empty.
+     */
     private Location getClosestSpawn(ArrayList<Location> spawnPoints, Location eventLoc) {
         ArrayList<Location> spawns = spawnPoints;
         Location closestSpawn = new Location(eventLoc.getWorld(), eventLoc.getX(), eventLoc.getY(), eventLoc.getZ());
@@ -75,7 +100,6 @@ public class MobSpawnHandler implements Listener {
                     closestSpawn.setX(loc.getX());
                     closestSpawn.setY(loc.getY());
                     closestSpawn.setZ(loc.getZ());
-
                 }
             }
             return closestSpawn;
@@ -84,6 +108,12 @@ public class MobSpawnHandler implements Listener {
         }
     }
 
+    /**
+     * Method takes a location and returns the config file name for the spawn point.
+     * 
+     * @param closestPoint The location we wish to know the name of.
+     * @return The config name of the input location. Returns null if the point is not in the config.
+     */
     private String getSpawnPointName(Location closestPoint) {
         List<String> worlds = mobConfig.getConfig().getStringList("Worlds");
 
@@ -104,6 +134,15 @@ public class MobSpawnHandler implements Listener {
 
     }
 
+    /**
+     * Calculates the appropriate level of the mob.
+     * 
+     * @param distance How far away is the closest spawn point?
+     * @param spawnLocation Where did this mob spawn?
+     * @param world Which world did the spawn occur in?
+     * @param closestSpawn The closest spawn location.
+     * @return The level of the mob.
+     */
     private int getLevel(Double distance, Location spawnLocation, String world, Location closestSpawn) {
         String closestPointName = getSpawnPointName(closestSpawn);
         int startLevel = 0;
@@ -125,6 +164,7 @@ public class MobSpawnHandler implements Listener {
 
     }
 
+    //Event handler for the mob spawn event. Passes off necessary information off to appropriate methods.
     @EventHandler(priority = EventPriority.MONITOR)
     public void OnMobSpawn(CreatureSpawnEvent event) {
         if (event.getSpawnReason() == SpawnReason.SPAWNER) {
