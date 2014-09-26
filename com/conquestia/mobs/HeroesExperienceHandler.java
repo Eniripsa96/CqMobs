@@ -101,24 +101,27 @@ public class HeroesExperienceHandler implements Listener {
                 double maxMoneyDrop = 0; //Do we want there to be a money cap?
                 int level = Integer.parseInt(entityName.substring(entityName.indexOf(":") + 2, entityName.indexOf("]"))); // Get the level from their name
                 
-                //Calculate random money drop
-                Random rand = new Random();
-                maxMoneyDrop = (level * levelCost * typeCost.get(event.getDefender().getEntity().getType())) + typeCost.get(event.getDefender().getEntity().getType());
-                double moneyDrop = maxMoneyDrop * rand.nextDouble();
+                //Calculate random money drop if the user wants money drops.
+                double moneyDrop = 0; // Initial declaration.
+                if (moneyDrops && typeCost.containsKey(event.getDefender().getEntity().getType())) {
+                    Random rand = new Random();
+                    maxMoneyDrop = (level * levelCost * typeCost.get(event.getDefender().getEntity().getType())) + typeCost.get(event.getDefender().getEntity().getType());
+                    moneyDrop = maxMoneyDrop * rand.nextDouble();
+                }
 
                 //Calculate experience for party members
                 if (event.getAttacker().hasParty()) {
                     for (Hero hero : event.getAttacker().getParty().getMembers()) {
                         if (event.getAttacker().getPlayer().getLocation().distanceSquared(hero.getPlayer().getLocation()) < 900) {
                             mobKillMap.put(hero.getPlayer().getUniqueId().toString(), event.getDefender().getEntity());
-                            if (econ != null) {
+                            if (econ != null && moneyDrops) {
                                 
                                 moneyDrop = (moneyDrop / event.getAttacker().getParty().getMembers().size());
                                 econ.depositPlayer(hero.getPlayer().getName(), moneyDrop);
                             }
                         }
                     }
-                } else {
+                } else if (moneyDrops) {
                     econ.depositPlayer(event.getAttacker().getPlayer().getName(), moneyDrop);
                 }
                 
