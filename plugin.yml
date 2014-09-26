@@ -1,6 +1,6 @@
 name: ConquestiaMobs
 main: com.conquestia.mobs.ConquestiaMobs
-version: 0.2
+version: 2.0.1
 author: Ultiferrago
 soft-depend: [Vault, HolographicDisplays]
 
