@@ -164,6 +164,8 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
             mobConfig.getConfig().set("MoneyDrop", true);
             mobConfig.getConfig().createSection("HologramUtils");
             mobConfig.getConfig().set("HologramUtils", true);
+            mobConfig.getConfig().createSection("DynamicFireDamage");
+            mobConfig.getConfig().set("DynamicFireDamage", true);
             for (World world : Bukkit.getServer().getWorlds()) {
                 worlds.add(world.getName());
                 mobConfig.getConfig().createSection(world.getName());
@@ -206,6 +208,7 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
     
     /**
      * Generates v0.2 config on first time use
+     * 
      */
     public void generateNewConfig() {
         
@@ -219,8 +222,18 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
             mobConfig.getConfig().set("HologramUtils", true);
         }
         
+        if (!mobConfig.getConfig().contains("DynamicFireDamage")) {
+            mobConfig.getConfig().createSection("DynamicFireDamage");
+            mobConfig.getConfig().set("DynamicFireDamage", true);    
+        }
+        
     }
     
+    /**
+     * Gets the hologram utility object.
+     * 
+     * @return Hologram utility object. 
+     */
     public static HoloUtils getHoloUtil() {
         return holoUtility;
     }
