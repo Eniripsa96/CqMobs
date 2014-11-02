@@ -74,7 +74,7 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
         //Experience Handlers
         if (mobConfig.getConfig().contains("ExperiencePerLevel") && mobConfig.getConfig().getDouble("ExperiencePerLevel") > 0.0) {
             if (mobConfig.getConfig().contains("HeroesExperience") && mobConfig.getConfig().getBoolean("HeroesExperience")) {
-                HeroesExperienceHandler heroesExperienceHandler = new HeroesExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"), mobConfig.getConfig().getBoolean("MobArenaExperience", false), mobConfig.getConfig().getDouble("MobArenaExperienceScale", 0.0), mobConfig.getConfig().getBoolean("MoneyDrop", true), mobConfig.getConfig().getBoolean("HoloUtils", true));
+                HeroesExperienceHandler heroesExperienceHandler = new HeroesExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"), mobConfig.getConfig().getBoolean("MobArenaExperience", false), mobConfig.getConfig().getDouble("MobArenaExperienceScale", 0.0), mobConfig.getConfig().getBoolean("MoneyDrop", false), mobConfig.getConfig().getBoolean("HologramUtils", false) && Bukkit.getPluginManager().getPlugin("HolographicDisplays") != null);
             } else if (mobConfig.getConfig().contains("SkillAPIExperience") && mobConfig.getConfig().getBoolean("SkillAPIExperience")) {
                 SkillAPIExperienceHandler skillAPIExperienceHandler = new SkillAPIExperienceHandler(this, mobConfig.getConfig().getDouble("ExperiencePerLevel"));
             } else {
@@ -88,6 +88,7 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
             holoUtility = new HoloUtils(this);
         } else {
             this.getLogger().info("Hologram Utils NOT enabled! Either disabled in config, or HolographicDisplays not present");
+            
         }
         
         //Lets server know that the handlers were successfully enabled
@@ -237,4 +238,5 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
     public static HoloUtils getHoloUtil() {
         return holoUtility;
     }
+    
 }

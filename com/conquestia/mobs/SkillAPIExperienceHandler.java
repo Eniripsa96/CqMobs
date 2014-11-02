@@ -13,7 +13,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.plugin.Plugin;
 
 /**
- *
+ * 
  * @author ferrago
  */
 public class SkillAPIExperienceHandler implements Listener {
