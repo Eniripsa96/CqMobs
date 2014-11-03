@@ -198,9 +198,12 @@ public class MobSpawnHandler implements Listener {
                     event.getEntity().setCustomName(ChatColor.GOLD + "[Lvl: " + ChatColor.YELLOW + level + ChatColor.GOLD + "] " + ChatColor.WHITE + event.getEntityType().name());
                 }
                 double oldHealth = event.getEntity().getHealth();
-                double newHealth = ((int) (oldHealth + oldHealth * (level * healthMultiplier)));
+                double newHealth = ((oldHealth + oldHealth * (level * healthMultiplier)));
                 event.getEntity().setMaxHealth(newHealth);
-                event.getEntity().setHealth(newHealth - 0.01);
+                if (newHealth > 1) {
+                    newHealth += 2.0;
+                }
+                event.getEntity().setHealth(newHealth - 1.0);
                 if (mobConfig.getConfig().contains("NamePlatesAlwaysVisible") && mobConfig.getConfig().getBoolean("NamePlatesAlwaysVisible")) {
                     event.getEntity().setCustomNameVisible(true);
                 }
