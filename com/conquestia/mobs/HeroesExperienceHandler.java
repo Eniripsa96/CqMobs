@@ -112,7 +112,7 @@ public class HeroesExperienceHandler implements Listener {
                 //Calculate experience for party members
                 if (event.getAttacker().hasParty()) {
                     for (Hero hero : event.getAttacker().getParty().getMembers()) {
-                        if (event.getAttacker().getPlayer().getLocation().distanceSquared(hero.getPlayer().getLocation()) < 900) {
+                        if (event.getAttacker().getPlayer().getLocation().getWorld() == hero.getPlayer().getLocation().getWorld() && event.getAttacker().getPlayer().getLocation().distanceSquared(hero.getPlayer().getLocation()) < 900) {
                             mobKillMap.put(hero.getPlayer().getUniqueId().toString(), event.getDefender().getEntity());
                             if (econ != null && moneyDrops) {
                                 

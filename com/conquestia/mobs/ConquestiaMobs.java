@@ -65,8 +65,9 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
         MobDamageHandler mobDamageHandler = new MobDamageHandler(this);
 
         //Mob Arena Handler
-        if (getMobArena() != null && mobConfig.getConfig().getBoolean("MobArenaWaveLeveling", false)) {
+        if (getMobArena() != null && mobConfig.getConfig().getBoolean("MobArenaExperience", false)) {
             MobArenaHandler mobArenaHandler = new MobArenaHandler(this);
+            this.getLogger().info("MobArena Handler created! MobArena experience rates are now being modified!");
         } else {
             this.getLogger().info("MobArena not detected or is disabled, MobArena Handler not enabled!");
         }
