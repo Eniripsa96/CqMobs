@@ -42,6 +42,13 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
 
         //Lets the user know that we successfully enabled this plugin
         getLogger().info("ConquestiaMobs Enabled!");
+        Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+            public void run() {
+                Bukkit.getLogger().info("Clearing all mobs to fix any naming issues!");
+                RefreshMobs();
+            }
+        }, 20);
+        
     }
 
     @Override
