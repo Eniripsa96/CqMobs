@@ -131,12 +131,14 @@ public class HeroesExperienceHandler implements Listener {
                     com.garbagemule.MobArena.framework.Arena arena = ((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaWithPlayer(event.getAttacker().getPlayer());
                     moneyDrop = 0;
                     showDeath = false;
-                    for (Hero hero : event.getAttacker().getParty().getMembers()) {
+                    if (event.getAttacker().hasParty()) {
+                        for (Hero hero : event.getAttacker().getParty().getMembers()) {
 
-                        if (((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaWithPlayer(hero.getPlayer()) != null && ((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaWithPlayer(hero.getPlayer()) == arena) {
-                            mobArenaKillMap.put(hero.getPlayer().getUniqueId().toString(), event.getDefender().getEntity());
+                            if (((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaWithPlayer(hero.getPlayer()) != null && ((com.garbagemule.MobArena.MobArena)ConquestiaMobs.getMobArena()).getArenaMaster().getArenaWithPlayer(hero.getPlayer()) == arena) {
+                                mobArenaKillMap.put(hero.getPlayer().getUniqueId().toString(), event.getDefender().getEntity());
+                            }
+
                         }
-
                     }
                 }
                 
