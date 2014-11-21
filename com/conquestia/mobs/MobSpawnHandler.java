@@ -9,7 +9,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -227,20 +226,7 @@ public class MobSpawnHandler implements Listener {
                     newHealth += 2.0;
                 }
                 event.getEntity().setMaxHealth(newHealth);
-                
-                final LivingEntity monster = event.getEntity();
-                final double fHealth = newHealth;
-                
-                Bukkit.getScheduler().runTaskLater(cqm, new Runnable() {
-
-                    public void run() {
-                        monster.setMaxHealth(fHealth);
-                    }
-                
-                }, 1);
-                
-                
-                //event.getEntity().setHealth(newHealth - 1.0);
+                event.getEntity().setHealth(newHealth - 0.5);
                 if (mobConfig.getConfig().contains("NamePlatesAlwaysVisible") && mobConfig.getConfig().getBoolean("NamePlatesAlwaysVisible")) {
                     event.getEntity().setCustomNameVisible(true);
                     debug("Made mob's name plate visilbe");
@@ -254,7 +240,11 @@ public class MobSpawnHandler implements Listener {
     
     public void debug(String debugMsg) {
         if (debug) {
-            Bukkit.getLogger().info(ChatColor.RED + "[" + ChatColor.DARK_PURPLE + "DEBUG" + ChatColor.RED  + "]" + ChatColor.WHITE + " " + debugMsg);
+            if (Bukkit.getConsoleSender() != null) {
+                Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[" + ChatColor.DARK_PURPLE + "CQM DEBUG" + ChatColor.RED  + "] " + ChatColor.WHITE + debugMsg);
+            } else {
+                Bukkit.getLogger().info("[DEBUG] " + debugMsg);
+            }
         }
     }
 }
