@@ -1,6 +1,6 @@
 name: ConquestiaMobs
 main: com.conquestia.mobs.ConquestiaMobs
-version: 2.0.8b
+version: 2.0.9b
 author: Ultiferrago
 soft-depend: [Vault, HolographicDisplays, MobArena]
 

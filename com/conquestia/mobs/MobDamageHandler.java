@@ -101,6 +101,8 @@ public class MobDamageHandler implements Listener {
                 double newDamage = (event.getDamage() + (event.getDamage() * (level * damageMultiplier)));
                 newDamage += damageFromHand;
                 event.setDamage(newDamage);
+                
+                ConquestiaMobs.debug("Damage Debug: " + ChatColor.AQUA + le.getCustomName() + ChatColor.WHITE + " dealt " + ChatColor.DARK_GREEN + newDamage + ChatColor.WHITE + " with a damageMultiplier setting of " + ChatColor.GOLD + damageMultiplier);
 
             }
         }
@@ -130,15 +132,19 @@ public class MobDamageHandler implements Listener {
                 newDamage += damageFromHand;
                 newDamage += wave;
                 event.setDamage(newDamage);
+                ConquestiaMobs.debug("Damage Debug: " + ChatColor.AQUA + le.getCustomName() + ChatColor.WHITE + " dealt " + ChatColor.DARK_GREEN + newDamage + ChatColor.WHITE + " with a damageMultiplier setting of " + ChatColor.GOLD + damageMultiplier);
             }
         }
 
         if (event.getDamager() instanceof Blaze || event.getDamager() instanceof SmallFireball || event.getDamager() instanceof Fireball) {
             int level = 0;
+            LivingEntity le = null;
             if (event.getDamager() instanceof Blaze) {
-                level = getMobLevel(ChatColor.stripColor(((LivingEntity) event.getDamager()).getCustomName()));
+                le = (LivingEntity) event.getDamager();
+                level = getMobLevel(ChatColor.stripColor((le.getCustomName())));
             } else {
-                level = getMobLevel(ChatColor.stripColor(((LivingEntity) ((Fireball) (event.getDamager())).getShooter()).getCustomName()));
+                le = (LivingEntity) ((Fireball) (event.getDamager())).getShooter();
+                level = getMobLevel(ChatColor.stripColor(le.getCustomName()));
             }
             double damageMultiplier = mobConfig.getConfig().getDouble(event.getEntity().getWorld().getName() + ".DamageMultiplier", 0.1);
             double newDamage = (event.getDamage() + (event.getDamage() * (level * damageMultiplier)));
@@ -152,6 +158,7 @@ public class MobDamageHandler implements Listener {
 
             newDamage += wave;
             event.setDamage(newDamage);
+            ConquestiaMobs.debug("Damage Debug: " + ChatColor.AQUA + le.getCustomName() + ChatColor.WHITE + " dealt " + ChatColor.DARK_GREEN + newDamage + ChatColor.WHITE + " with a damageMultiplier setting of " + ChatColor.GOLD + damageMultiplier);
         }
     }
 }

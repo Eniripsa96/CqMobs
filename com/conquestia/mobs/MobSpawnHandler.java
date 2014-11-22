@@ -29,7 +29,6 @@ public class MobSpawnHandler implements Listener {
 
     private static ArrayList<EntityType> notExempt = new ArrayList<EntityType>(); //List of mobs that we want to have a level
     ConquestiaMobs cqm; //Instance of instantiating plugin, used for non static methods we might need access to.
-    private final boolean debug;
     Config mobConfig; //Users configuration file used to load spawn points and other settings.
     
     //User configuration settings
@@ -47,7 +46,6 @@ public class MobSpawnHandler implements Listener {
         mobConfig = new Config(plugin, "Spawning" + File.separator + "MobSpawns");
         Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
         addNotExemptEntities();
-        debug = mobConfig.getConfig().getBoolean("Debug", false);
     }
     
     /**
@@ -172,11 +170,11 @@ public class MobSpawnHandler implements Listener {
             return;
         }
         
-        debug("Handling spawning of " + event.getCreatureType().getName());
+        ConquestiaMobs.debug("Handling spawning of " + event.getCreatureType().getName());
         
         if (event.getSpawnReason() == SpawnReason.SPAWNER) {
             event.getEntity().setMetadata("Spawner", new FixedMetadataValue(cqm, true));
-            debug("Mob spawned from spawner, marking mob!");
+            ConquestiaMobs.debug("Mob spawned from spawner, marking mob!");
         }
         
         
@@ -203,23 +201,23 @@ public class MobSpawnHandler implements Listener {
             
             Location closestSpawn = getClosestSpawn(spawns, event.getLocation());
             
-            debug("Found closest spawn point, using " + closestSpawn.toString());
+            ConquestiaMobs.debug("Found closest spawn point, using " + closestSpawn.toString());
             
             if (closestSpawn != null) {
                 int level = getLevel(closestSpawn.distance(event.getLocation()), event.getLocation(), event.getLocation().getWorld().getName(), closestSpawn);
                 healthMultiplier = mobConfig.getConfig().getDouble(event.getLocation().getWorld().getName() + ".HealthMultiplier", 0.01);
                 if (event.getEntity().getCustomName() != null && !event.getEntity().getCustomName().toLowerCase().contains("null")) {
                     event.getEntity().setCustomName(ChatColor.GOLD + "[Lvl: " + ChatColor.YELLOW + level + ChatColor.GOLD + "] " + ChatColor.WHITE + event.getEntity().getCustomName());
-                    debug("Mob's name is a custom name!");
+                    ConquestiaMobs.debug("Mob's name is a custom name!");
                 } else {
                     event.getEntity().setCustomName(ChatColor.GOLD + "[Lvl: " + ChatColor.YELLOW + level + ChatColor.GOLD + "] " + ChatColor.WHITE + event.getEntityType().name());
-                    debug("Mobs name is default name");
+                    ConquestiaMobs.debug("Mobs name is default name");
                 }
                 
                 double oldHealth = event.getEntity().getHealth();
                 double newHealth = ((oldHealth + oldHealth * (level * healthMultiplier)));
                 
-                debug("Spawned Health: " + oldHealth + " NewHealth: " + newHealth);
+                ConquestiaMobs.debug("Spawned Health: " + oldHealth + " NewHealth: " + newHealth);
                 
                 
                 if (newHealth > 1) {
@@ -229,22 +227,11 @@ public class MobSpawnHandler implements Listener {
                 event.getEntity().setHealth(newHealth - 0.5);
                 if (mobConfig.getConfig().contains("NamePlatesAlwaysVisible") && mobConfig.getConfig().getBoolean("NamePlatesAlwaysVisible")) {
                     event.getEntity().setCustomNameVisible(true);
-                    debug("Made mob's name plate visilbe");
+                    ConquestiaMobs.debug("Made mob's name plate visilbe");
                 }
             }
 
         }
 
-    }
-
-    
-    public void debug(String debugMsg) {
-        if (debug) {
-            if (Bukkit.getConsoleSender() != null) {
-                Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[" + ChatColor.DARK_PURPLE + "CQM DEBUG" + ChatColor.RED  + "] " + ChatColor.WHITE + debugMsg);
-            } else {
-                Bukkit.getLogger().info("[DEBUG] " + debugMsg);
-            }
-        }
     }
 }

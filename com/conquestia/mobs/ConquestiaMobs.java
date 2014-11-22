@@ -6,9 +6,11 @@ import com.conquestia.mobs.MobArena.MobArenaHandler;
 import java.io.File;
 import java.util.ArrayList;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.Plugin;
@@ -23,6 +25,7 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
 
     private Config mobConfig; //Configuration file
     private static HoloUtils holoUtility; //Holo util
+    private static boolean debug;
 
     /**
      * Sets up config file, generates defaults if needed. Enables handlers
@@ -39,6 +42,9 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
 
         //Handler Operations
         TurnOnHandlers();
+        
+        //Is debug enabled?
+        debug = mobConfig.getConfig().getBoolean("Debug", false);
 
         //Lets the user know that we successfully enabled this plugin
         getLogger().info("ConquestiaMobs Enabled!");
@@ -142,7 +148,9 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
     public void RefreshMobs() {
         for (World world : Bukkit.getServer().getWorlds()) {
             for (LivingEntity le : world.getLivingEntities()) {
-                if (MobSpawnHandler.getNotExemptEntities().contains(le.getType())) {
+                if (le.getType() == EntityType.OCELOT || le.getType() == EntityType.WOLF) {
+                    continue;
+                } else if (MobSpawnHandler.getNotExemptEntities().contains(le.getType())) {
                     le.remove();
                 }
             }
@@ -245,6 +253,16 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
      */
     public static HoloUtils getHoloUtil() {
         return holoUtility;
+    }
+    
+    public static void debug(String debugMsg) {
+        if (debug) {
+            if (Bukkit.getConsoleSender() != null) {
+                Bukkit.getConsoleSender().sendMessage(ChatColor.RED + "[" + ChatColor.DARK_PURPLE + "CQM DEBUG" + ChatColor.RED  + "] " + ChatColor.WHITE + debugMsg);
+            } else {
+                Bukkit.getLogger().info("[DEBUG] " + debugMsg);
+            }
+        }
     }
     
 }
