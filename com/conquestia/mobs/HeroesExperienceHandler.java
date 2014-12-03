@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.Random;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
-import static org.bukkit.Bukkit.getServer;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -20,7 +19,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.RegisteredServiceProvider;
 
 /**
  * Handles Heroes plugin experience for custom mob kills
@@ -32,8 +30,8 @@ public class HeroesExperienceHandler implements Listener {
     private final double xpScale; //xp factor used to increase xp for higher level mobs.
     private final boolean maEnabled;
     private final double maScale;
-    private final boolean holograms;
     private final boolean moneyDrops;
+    private final boolean debug;
     double levelCost = 0.1;
     
     //Plugin Instances
@@ -45,6 +43,7 @@ public class HeroesExperienceHandler implements Listener {
     private final HashMap<String, LivingEntity> mobKillMap = new HashMap<>(); //Used to help compute accurate solo/party xp
     private final HashMap<EntityType, Double> typeCost = new HashMap<>(); //Initial xp drops for mob types
     public static HashMap<String, LivingEntity> mobArenaKillMap = new HashMap(); //Used to calculate modified xp for arena mobs
+    
 
 
     /**
@@ -55,14 +54,10 @@ public class HeroesExperienceHandler implements Listener {
      * @param maEnabled Is Ma Enabled?
      * @param maScale Mob Arena modifier factor
      */
-    public HeroesExperienceHandler(Plugin CqMobs, double experienceScale, boolean maEnabled, double maScale, boolean moneyDrops, boolean holograms) {
+    public HeroesExperienceHandler(Plugin CqMobs, double experienceScale, boolean maEnabled, double maScale, boolean moneyDrops, boolean debug) {
         
         //Registration
         Bukkit.getServer().getPluginManager().registerEvents(this, CqMobs);
-        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
-        if (rsp != null) {
-            econ = rsp.getProvider();
-        }
         
         //Instantiation
         this.xpScale = experienceScale;
@@ -70,7 +65,7 @@ public class HeroesExperienceHandler implements Listener {
         this.maEnabled = maEnabled;
         this.maScale = maScale;
         this.moneyDrops = moneyDrops;
-        this.holograms = holograms;
+        this.debug = debug;
         heroes = (Heroes) Bukkit.getPluginManager().getPlugin("Heroes");
         
         //Fill money map
@@ -93,36 +88,33 @@ public class HeroesExperienceHandler implements Listener {
             
             boolean showDeath = true; //Always start off by setting this to true
             
-            String entityName = ChatColor.stripColor(event.getDefender().getEntity().getCustomName()); //We need the name without fancy colors to compute the level
+            //String entityName = ChatColor.stripColor(event.getDefender().getEntity().getCustomName()); //We need the name without fancy colors to compute the level
             
             //If the defender is a monster && they have a level
-            if (event.getDefender().getEntity() instanceof Monster && entityName != null && entityName.toLowerCase().contains("lvl:")) {
+            if (event.getDefender().getEntity() instanceof Monster) {
                 mobKillMap.put(event.getAttacker().getPlayer().getUniqueId().toString(), event.getDefender().getEntity()); // Put the hero and the mob into our data map
                 double maxMoneyDrop = 0; //Do we want there to be a money cap?
-                int level = Integer.parseInt(entityName.substring(entityName.indexOf(":") + 2, entityName.indexOf("]"))); // Get the level from their name
                 
-                //Calculate random money drop if the user wants money drops.
+                int level = 1;
+                
+                if (debug) {
+                    long start = System.currentTimeMillis();
+                    level = MobSpawnHandler.getMobLevel(event.getDefender().getEntity());
+                    ConquestiaMobs.debug(ChatColor.BLUE + "Looking Up Level required: " + ChatColor.YELLOW + "" + ((System.currentTimeMillis() - start)) + ChatColor.BLUE + " miliseconds with " + MobSpawnHandler.getLevelMap().keySet().size() + " mobs");
+                } else {
+                    level = getMobLevel(event.getDefender().getEntity());
+                }
+                
+                //Calculate random money drop if the user wants money drops
                 double moneyDrop = 0; // Initial declaration.
                 if (moneyDrops && typeCost.containsKey(event.getDefender().getEntity().getType())) {
                     Random rand = new Random();
-                    maxMoneyDrop = (level * levelCost * typeCost.get(event.getDefender().getEntity().getType())) + typeCost.get(event.getDefender().getEntity().getType());
+                    maxMoneyDrop = ((double)level * levelCost * typeCost.get(event.getDefender().getEntity().getType())) + typeCost.get(event.getDefender().getEntity().getType());
                     moneyDrop = maxMoneyDrop * rand.nextDouble();
                 }
-
-                //Calculate experience for party members
+                
                 if (event.getAttacker().hasParty()) {
-                    for (Hero hero : event.getAttacker().getParty().getMembers()) {
-                        if (event.getAttacker().getPlayer().getLocation().getWorld() == hero.getPlayer().getLocation().getWorld() && event.getAttacker().getPlayer().getLocation().distanceSquared(hero.getPlayer().getLocation()) < 900) {
-                            mobKillMap.put(hero.getPlayer().getUniqueId().toString(), event.getDefender().getEntity());
-                            if (econ != null && moneyDrops) {
-                                
-                                moneyDrop = (moneyDrop / event.getAttacker().getParty().getMembers().size());
-                                econ.depositPlayer(hero.getPlayer().getName(), moneyDrop);
-                            }
-                        }
-                    }
-                } else if (moneyDrops) {
-                    econ.depositPlayer(event.getAttacker().getPlayer().getName(), moneyDrop);
+                    moneyDrop = ((moneyDrop * 1.5) / event.getAttacker().getParty().getMembers().size());
                 }
                 
                 //Mob Arena experience drops
@@ -143,11 +135,12 @@ public class HeroesExperienceHandler implements Listener {
                 }
                 
                 //Display xp/money holograms
-                if (showDeath && holograms) {
+                if (showDeath) {
                     double xp =  heroes.getCharacterManager().getMonster(event.getDefender().getEntity()).getExperience() * level * xpScale;
                     
                     //@Research
                     xp *= -3; //Don't know why this works...Research later
+                    xp += 3;
                     
                     //If Hero has party send xp to all players
                     if (event.getAttacker().hasParty()) {
@@ -156,14 +149,9 @@ public class HeroesExperienceHandler implements Listener {
                         for (Hero hero : event.getAttacker().getParty().getMembers()) {
                             party.add(hero.getPlayer());
                         }
-                        ConquestiaMobs.getHoloUtil().sendPartyHologram(event.getDefender().getEntity().getEyeLocation(), party, xp, moneyDrop, level);
-                    }   else { // else only show xp to single player
-                        ConquestiaMobs.getHoloUtil().sendSoloHologram(event.getDefender().getEntity().getEyeLocation(), event.getAttacker().getPlayer(), xp, moneyDrop, 5);
                     }
                     
-                    
-                    
-                    
+                    ConquestiaMobs.getDisplay().DisplayStuffHeroes(event.getDefender().getEntity().getLocation(), xp, moneyDrop, event.getAttacker().getPlayer());
                 }
 
             }
@@ -191,13 +179,13 @@ public class HeroesExperienceHandler implements Listener {
     }
     
     /**
-     * Retrieve the monsters level from it's name string.
+     * Retrieve the monsters level.
      * 
-     * @param entityName the name to parse for the level
+     * @param ent The entity. 
      * @return returns the monster's level
      */
-    private int getMobLevel(String entityName) {
-        return Integer.parseInt(entityName.substring(entityName.indexOf(":") + 2, entityName.indexOf("]")));
+    private int getMobLevel(LivingEntity ent) {
+        return MobSpawnHandler.getMobLevel(ent);
     }
 
     /**
@@ -210,14 +198,17 @@ public class HeroesExperienceHandler implements Listener {
     public void onHeroExpChange(ExperienceChangeEvent event) {
         if (event.getSource() == ExperienceType.KILLING && mobKillMap.containsKey(event.getHero().getPlayer().getUniqueId().toString())) {
             LivingEntity ent = mobKillMap.get(event.getHero().getPlayer().getUniqueId().toString());
-            String entityName = ChatColor.stripColor(ent.getCustomName());
-            int level = getMobLevel(entityName);
+            int level = getMobLevel(ent);
             if (mobArenaKillMap.containsKey(event.getHero().getPlayer().getUniqueId().toString())) {
                 event.setExpGain(event.getExpChange() + (level * xpScale * maScale * event.getExpChange()));
             } else {
                 event.setExpGain(event.getExpChange() + (level * xpScale * event.getExpChange()));
             }
+            
+            
+            MobSpawnHandler.getMobLevel(ent);
             mobKillMap.remove(event.getHero().getPlayer().getUniqueId().toString());
+            
         }
     }
 

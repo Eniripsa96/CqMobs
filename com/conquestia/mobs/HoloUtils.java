@@ -21,6 +21,8 @@ public class HoloUtils {
     public HoloUtils(Plugin plugin) {
         this.plugin = plugin;
     }
+    
+    
 
     /**
      * Creates a hologram that is displayed for everyone within
@@ -60,9 +62,10 @@ public class HoloUtils {
      * @param money how much money the player is receiving (if 0 omits line).
      * @param time how long to show the hologram.
      */
-    public void sendSoloHologram(Location deathLoc, Player eyes, double exp, double money, long time) {
+    public Hologram sendSoloHologram(Location deathLoc, Player eyes, double exp, double money, long time) {
         DecimalFormat df = new DecimalFormat("#.##");
         final Hologram createHologram;
+        deathLoc.setY(deathLoc.getY()+2);
         if (money != 0) {
             createHologram = HolographicDisplaysAPI.createIndividualHologram(plugin, deathLoc, eyes, ChatColor.WHITE + "+" + df.format(exp) + ChatColor.BLUE + " exp", ChatColor.GREEN + "+" + df.format(money) + ChatColor.WHITE + " Edens");
         } else {
@@ -71,10 +74,13 @@ public class HoloUtils {
         }
         
         Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
+            @Override
             public void run() {
                 createHologram.delete();
             }
-        }, time * 20);    
+        }, time * 20);
+        
+        return createHologram;
     }
     
     
@@ -88,9 +94,10 @@ public class HoloUtils {
      * @param money how much money the player is receiving (if 0 omits line).
      * @param time how long to show the hologram.
      */
-    public void sendPartyHologram(Location deathLoc, List<Player> party, double exp, double money, long time) {
+    public Hologram sendPartyHologram(Location deathLoc, List<Player> party, double exp, double money, long time) {
         DecimalFormat df = new DecimalFormat("#.##");
         final Hologram createHologram;
+        deathLoc.setY(deathLoc.getY()+2);
         if (money != 0) {
             createHologram = HolographicDisplaysAPI.createIndividualHologram(plugin, deathLoc, party , ChatColor.WHITE + "+" + df.format(exp) + ChatColor.BLUE + " exp", ChatColor.GREEN + "+" + df.format(money) + ChatColor.WHITE + " Edens");
         } else {
@@ -99,10 +106,13 @@ public class HoloUtils {
         }
         
         Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
+            @Override
             public void run() {
                 createHologram.delete();
             }
-        }, time * 20);    
+        }, time * 20);   
+        
+        return createHologram;
     }
     
     

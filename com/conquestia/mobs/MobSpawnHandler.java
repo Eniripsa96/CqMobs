@@ -3,90 +3,140 @@ package com.conquestia.mobs;
 import com.conquestia.mobs.Config.Config;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Handles the spawning of mobs. Calculates a 
- * level depending on distance from the closes 
- * spawn point. Sets the mobs name to show the
- * corresponding level.
- * 
+ * Handles the spawning of mobs. Calculates a level depending on distance from
+ * the closes spawn point. Sets the mobs name to show the corresponding level.
+ *
  * @author ferrago
  */
 public class MobSpawnHandler implements Listener {
 
-    private static ArrayList<EntityType> notExempt = new ArrayList<EntityType>(); //List of mobs that we want to have a level
+    private static ArrayList<EntityType> exempt = new ArrayList<EntityType>(); //List of mobs that we want to have a level
+    private static final HashMap<String, Integer> levelMap = new HashMap<>();
+    private static String format;
+
     ConquestiaMobs cqm; //Instance of instantiating plugin, used for non static methods we might need access to.
     Config mobConfig; //Users configuration file used to load spawn points and other settings.
-    
+
     //User configuration settings
     Double distancePerLevel;
     Double healthMultiplier;
 
     /**
-     * Constructor for creation of this handler. Initialize variables
-     * load config, and register events.
-     * 
+     * Constructor for creation of this handler. Initialize variables load
+     * config, and register events.
+     *
      * @param plugin Calling plugin that creates this handler.
      */
     public MobSpawnHandler(JavaPlugin plugin) {
         cqm = (ConquestiaMobs) plugin;
         mobConfig = new Config(plugin, "Spawning" + File.separator + "MobSpawns");
         Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
-        addNotExemptEntities();
+        addExemptEntities();
+        format = mobConfig.getConfig().getString("LevelNameFormat", "&6[Lvl: &e#&6]");
+    }
+
+    /**
+     * Getter method for retrieving which entities we want to alter the spawn
+     * of.
+     *
+     * @return Non exempt entities.
+     */
+    public static ArrayList<EntityType> getExemptEntities() {
+        return exempt;
     }
     
-    /**
-     * Getter method for retrieving which entities 
-     * we want to alter the spawn of.
-     * 
-     * @return Non exempt entities. 
-     */
-    public static ArrayList<EntityType> getNotExemptEntities() {
-        return notExempt;
+    public static HashMap<String, Integer> getLevelMap() {
+        return levelMap;
+    }
+    
+    public static int getMobLevel(LivingEntity ent) {
+        if (levelMap.containsKey(ent.getUniqueId().toString())) {
+            return levelMap.get(ent.getUniqueId().toString());
+        } 
+        
+        World world = ent.getWorld();
+        LivingEntity newEnt = world.spawnCreature(ent.getLocation(), ent.getType());
+        ent.remove();
+        return 0;
+        
     }
 
     //Just provide a consise way of creating the list of non exempt entites
     //Potentially might be used to allow users the option of which mobs to exempt.
-    private static void addNotExemptEntities() {
-        notExempt.add(EntityType.BLAZE);
-        notExempt.add(EntityType.CAVE_SPIDER);
-        notExempt.add(EntityType.CREEPER);
-        notExempt.add(EntityType.ENDERMAN);
-        notExempt.add(EntityType.GHAST);
-        notExempt.add(EntityType.GIANT);
-        notExempt.add(EntityType.IRON_GOLEM);
-        notExempt.add(EntityType.MAGMA_CUBE);
-        notExempt.add(EntityType.PIG_ZOMBIE);
-        notExempt.add(EntityType.SKELETON);
-        notExempt.add(EntityType.SLIME);
-        notExempt.add(EntityType.SNOWMAN);
-        notExempt.add(EntityType.SPIDER);
-        notExempt.add(EntityType.WITCH);
-        notExempt.add(EntityType.WITHER);
-        notExempt.add(EntityType.WOLF);
-        notExempt.add(EntityType.ZOMBIE);
+    private static void addExemptEntities() {
+        exempt.add(EntityType.BAT);
+        exempt.add(EntityType.ARROW);
+        exempt.add(EntityType.ARMOR_STAND);
+        exempt.add(EntityType.BOAT);
+        exempt.add(EntityType.CHICKEN);
+        exempt.add(EntityType.COMPLEX_PART);
+        exempt.add(EntityType.COW);
+        exempt.add(EntityType.DROPPED_ITEM);
+        exempt.add(EntityType.EGG);
+        exempt.add(EntityType.ENDER_CRYSTAL);
+        exempt.add(EntityType.ENDER_PEARL);
+        exempt.add(EntityType.ENDER_SIGNAL);
+        exempt.add(EntityType.EXPERIENCE_ORB);
+        exempt.add(EntityType.FALLING_BLOCK);
+        exempt.add(EntityType.FIREBALL);
+        exempt.add(EntityType.FIREWORK);
+        exempt.add(EntityType.FISHING_HOOK);
+        exempt.add(EntityType.HORSE);
+        exempt.add(EntityType.ITEM_FRAME);
+        exempt.add(EntityType.LEASH_HITCH);
+        exempt.add(EntityType.LIGHTNING);
+        exempt.add(EntityType.MINECART);
+        exempt.add(EntityType.MINECART_CHEST);
+        exempt.add(EntityType.MINECART_COMMAND);
+        exempt.add(EntityType.MINECART_FURNACE);
+        exempt.add(EntityType.MINECART_HOPPER);
+        exempt.add(EntityType.MINECART_MOB_SPAWNER);
+        exempt.add(EntityType.MINECART_TNT);
+        exempt.add(EntityType.MUSHROOM_COW);
+        exempt.add(EntityType.OCELOT);
+        exempt.add(EntityType.PAINTING);
+        exempt.add(EntityType.PIG);
+        exempt.add(EntityType.PLAYER);
+        exempt.add(EntityType.PRIMED_TNT);
+        exempt.add(EntityType.RABBIT);
+        exempt.add(EntityType.SHEEP);
+        exempt.add(EntityType.SMALL_FIREBALL);
+        exempt.add(EntityType.SNOWBALL);
+        exempt.add(EntityType.SPLASH_POTION);
+        exempt.add(EntityType.SQUID);
+        exempt.add(EntityType.THROWN_EXP_BOTTLE);
+        exempt.add(EntityType.UNKNOWN);
+        exempt.add(EntityType.VILLAGER);
+        exempt.add(EntityType.WEATHER);
+        exempt.add(EntityType.WITHER_SKULL);
     }
 
     /**
      * Uses a basic algorithm to compute the closest designated spawn location
      * to the monster that is spawning.
-     * 
+     *
      * @param spawnPoints List of spawn points to use in calculations
      * @param eventLoc Where the monster spawned
-     * @return The location from the spawnPoints list that is closest to our event location. Returns null if spawns is empty.
+     * @return The location from the spawnPoints list that is closest to our
+     * event location. Returns null if spawns is empty.
      */
     private Location getClosestSpawn(ArrayList<Location> spawnPoints, Location eventLoc) {
         ArrayList<Location> spawns = spawnPoints;
@@ -108,10 +158,12 @@ public class MobSpawnHandler implements Listener {
     }
 
     /**
-     * Method takes a location and returns the config file name for the spawn point.
-     * 
+     * Method takes a location and returns the config file name for the spawn
+     * point.
+     *
      * @param closestPoint The location we wish to know the name of.
-     * @return The config name of the input location. Returns null if the point is not in the config.
+     * @return The config name of the input location. Returns null if the point
+     * is not in the config.
      */
     private String getSpawnPointName(Location closestPoint) {
         List<String> worlds = mobConfig.getConfig().getStringList("Worlds");
@@ -135,7 +187,7 @@ public class MobSpawnHandler implements Listener {
 
     /**
      * Calculates the appropriate level of the mob.
-     * 
+     *
      * @param distance How far away is the closest spawn point?
      * @param spawnLocation Where did this mob spawn?
      * @param world Which world did the spawn occur in?
@@ -163,24 +215,46 @@ public class MobSpawnHandler implements Listener {
 
     }
 
+    private void setName(LivingEntity ent, int level) {
+        String newName = "";
+        if (ent.getCustomName() != null && !ent.getCustomName().toLowerCase().contains("null")) {
+            newName = ent.getCustomName();
+            ConquestiaMobs.debug("Mob's name is a custom name!");
+        } else {
+            newName = ent.getType().toString();
+            newName = newName.substring(0, 1).toUpperCase() + newName.substring(1).toLowerCase();
+            ConquestiaMobs.debug("Mobs name is default name");
+        }
+        
+        boolean prefix = mobConfig.getConfig().getBoolean("UsePrefix", true);
+        boolean suffix = mobConfig.getConfig().getBoolean("UseSuffix", false);
+        
+        if (prefix) {
+            newName = ChatColor.translateAlternateColorCodes('&', format.replace("#", level + "")) + " " + ChatColor.WHITE + newName;
+        }
+        
+        if (suffix) {
+            newName += " " + ChatColor.translateAlternateColorCodes('&', format.replace("#", level + ""));
+        }
+        
+        ent.setCustomName(newName);
+    }
+
     //Event handler for the mob spawn event. Passes off necessary information off to appropriate methods.
     @EventHandler(priority = EventPriority.MONITOR)
     public void OnMobSpawn(CreatureSpawnEvent event) {
         if (event.getCreatureType() == null) {
             return;
         }
-        
+
         ConquestiaMobs.debug("Handling spawning of " + event.getCreatureType().getName());
-        
+
         if (event.getSpawnReason() == SpawnReason.SPAWNER) {
             event.getEntity().setMetadata("Spawner", new FixedMetadataValue(cqm, true));
             ConquestiaMobs.debug("Mob spawned from spawner, marking mob!");
         }
-        
-        
-                
-        
-        if (notExempt.contains(event.getEntityType())) {
+
+        if (!exempt.contains(event.getEntityType())) {
             ArrayList<Location> spawns = new ArrayList();
             List<String> worlds = mobConfig.getConfig().getStringList("Worlds");
             for (String world : worlds) {
@@ -198,28 +272,22 @@ public class MobSpawnHandler implements Listener {
 
                 }
             }
-            
+
             Location closestSpawn = getClosestSpawn(spawns, event.getLocation());
-            
+
             ConquestiaMobs.debug("Found closest spawn point, using " + closestSpawn.toString());
-            
+
             if (closestSpawn != null) {
                 int level = getLevel(closestSpawn.distance(event.getLocation()), event.getLocation(), event.getLocation().getWorld().getName(), closestSpawn);
+                levelMap.put(event.getEntity().getUniqueId().toString(), level);
                 healthMultiplier = mobConfig.getConfig().getDouble(event.getLocation().getWorld().getName() + ".HealthMultiplier", 0.01);
-                if (event.getEntity().getCustomName() != null && !event.getEntity().getCustomName().toLowerCase().contains("null")) {
-                    event.getEntity().setCustomName(ChatColor.GOLD + "[Lvl: " + ChatColor.YELLOW + level + ChatColor.GOLD + "] " + ChatColor.WHITE + event.getEntity().getCustomName());
-                    ConquestiaMobs.debug("Mob's name is a custom name!");
-                } else {
-                    event.getEntity().setCustomName(ChatColor.GOLD + "[Lvl: " + ChatColor.YELLOW + level + ChatColor.GOLD + "] " + ChatColor.WHITE + event.getEntityType().name());
-                    ConquestiaMobs.debug("Mobs name is default name");
-                }
-                
+                setName(event.getEntity(), level);
+
                 double oldHealth = event.getEntity().getHealth();
                 double newHealth = ((oldHealth + oldHealth * (level * healthMultiplier)));
-                
+
                 ConquestiaMobs.debug("Spawned Health: " + oldHealth + " NewHealth: " + newHealth);
-                
-                
+
                 if (newHealth > 1) {
                     newHealth += 2.0;
                 }
@@ -233,5 +301,20 @@ public class MobSpawnHandler implements Listener {
 
         }
 
+    }
+
+    //Really only used to clean up
+    @EventHandler
+    public void onMobDeath(EntityDeathEvent event) {
+        if (levelMap.containsKey(event.getEntity().getUniqueId().toString())) {
+            final String ent = event.getEntity().getUniqueId().toString();
+            Bukkit.getScheduler().runTaskLater(cqm, new Runnable() {
+                @Override
+                public void run() {
+                    levelMap.remove(ent);
+                }
+            }, 5);
+
+        }
     }
 }

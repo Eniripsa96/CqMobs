@@ -47,16 +47,6 @@ public class MobDamageHandler implements Listener {
     }
 
     /**
-     * Retrieve the monsters level from it's name string.
-     * 
-     * @param entityName the name to parse for the level
-     * @return returns the monster's level
-     */
-    private int getMobLevel(String entityName) {
-        return Integer.parseInt(entityName.substring(entityName.indexOf(":") + 2, entityName.indexOf("]")));
-    }
-
-    /**
      * Handles fire damage
      * @param event 
      */
@@ -80,13 +70,13 @@ public class MobDamageHandler implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void OnMobDamage(EntityDamageByEntityEvent event) {
-        if (!mobConfig.getConfig().contains(event.getEntity().getWorld().getName() + ".DamageModifierEnabled") || !mobConfig.getConfig().getBoolean(event.getEntity().getWorld().getName() + ".DamageModifierEnabled")) {
+        if (!mobConfig.getConfig().getBoolean(event.getEntity().getWorld().getName() + ".DamageModifierEnabled", false)) {
             return;
         }
 
         if (event.getDamager() instanceof Golem || event.getDamager() instanceof Monster) {
             LivingEntity le = (LivingEntity) event.getDamager();
-            if (le.getCustomName() != null && le.getCustomName().toLowerCase().contains("lvl")) {
+            if (le.getCustomName() != null) {
                 int damageFromHand = 0;
                 if (le != null && le.getEquipment() != null && le.getEquipment().getItemInHand() != null && le.getEquipment().getItemInHand().getItemMeta() != null && le.getEquipment().getItemInHand().getItemMeta().getLore() != null) {
                     List<String> loreFromHand = le.getEquipment().getItemInHand().getItemMeta().getLore();
@@ -96,7 +86,7 @@ public class MobDamageHandler implements Listener {
                         }
                     }
                 }
-                int level = getMobLevel(ChatColor.stripColor(le.getCustomName()));
+                int level = MobSpawnHandler.getMobLevel(le);
                 double damageMultiplier = mobConfig.getConfig().getDouble(event.getEntity().getWorld().getName() + ".DamageMultiplier", 0.1);
                 double newDamage = (event.getDamage() + (event.getDamage() * (level * damageMultiplier)));
                 newDamage += damageFromHand;
@@ -108,7 +98,7 @@ public class MobDamageHandler implements Listener {
         }
         if (event.getDamager() instanceof Projectile && ((Projectile) event.getDamager()).getShooter() instanceof Monster) {
             LivingEntity le = (LivingEntity) (((Projectile) (event.getDamager())).getShooter());
-            if (le.getCustomName() != null && le.getCustomName().toLowerCase().contains("lvl")) {
+            if (le.getCustomName() != null) {
                 int damageFromHand = 0;
                 if (le.getEquipment().getItemInHand() != null && le.getEquipment().getItemInHand().getItemMeta() != null && le.getEquipment().getItemInHand().getItemMeta().getLore() != null) {
                     List<String> loreFromHand = le.getEquipment().getItemInHand().getItemMeta().getLore();
@@ -118,7 +108,7 @@ public class MobDamageHandler implements Listener {
                         }
                     }
                 }
-                int level = getMobLevel(ChatColor.stripColor(le.getCustomName()));
+                int level = MobSpawnHandler.getMobLevel(le);
                 double damageMultiplier = mobConfig.getConfig().getDouble(event.getEntity().getWorld().getName() + ".DamageMultiplier", 0.1);
                 double newDamage = (event.getDamage() + (event.getDamage() * (level * damageMultiplier)));
 
@@ -141,10 +131,10 @@ public class MobDamageHandler implements Listener {
             LivingEntity le = null;
             if (event.getDamager() instanceof Blaze) {
                 le = (LivingEntity) event.getDamager();
-                level = getMobLevel(ChatColor.stripColor((le.getCustomName())));
+                level = MobSpawnHandler.getMobLevel(le);
             } else {
                 le = (LivingEntity) ((Fireball) (event.getDamager())).getShooter();
-                level = getMobLevel(ChatColor.stripColor(le.getCustomName()));
+                level = MobSpawnHandler.getMobLevel(le);
             }
             double damageMultiplier = mobConfig.getConfig().getDouble(event.getEntity().getWorld().getName() + ".DamageMultiplier", 0.1);
             double newDamage = (event.getDamage() + (event.getDamage() * (level * damageMultiplier)));
