@@ -28,6 +28,9 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
     private static HoloUtils holoUtility; //Holo util
     private static boolean debug; //debug variable
     private static DisplayUtil display;
+    private boolean compat1_8 = false;
+    
+    private static ArrayList<World> worldList= new ArrayList<>();
     
     
 
@@ -43,9 +46,21 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
         setConfigForWorlds(); //Generates default config on first use
         generateNewConfig(); //Generates v0.2 config on first use
         mobConfig.saveConfig();
+        
+        getLogger().info("Detected Bukkit Version: " + Bukkit.getBukkitVersion());
+        if (Bukkit.getBukkitVersion().contains("1.8")) {
+            getLogger().info("Enabling 1.8 features!");
+            compat1_8 = true;
+        }
 
         //Handler Operations
         TurnOnHandlers();
+        for (String worldName : mobConfig.getConfig().getStringList("Worlds")) {
+            World world = Bukkit.getWorld(worldName);
+            if (world != null) {
+                worldList.add(world);
+            }
+        }
         
         //Is debug enabled?
         debug = mobConfig.getConfig().getBoolean("Debug", false);
@@ -53,16 +68,6 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
         //Lets the user know that we successfully enabled this plugin
         getLogger().info("ConquestiaMobs Enabled!");
         
-    }
-    
-    @Override
-    public void onLoad() {
-        Bukkit.getScheduler().runTaskLater(this, new Runnable() {
-            public void run() {
-                Bukkit.getLogger().info("Clearing all mobs to fix any naming issues!");
-                RefreshMobs();
-            }
-        }, 40);
     }
 
     @Override
@@ -93,7 +98,7 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
         MoneyUtil moneyUtil = MoneyUtil.getInstance();
         info("    " + ChatColor.GOLD + "[" + ChatColor.GREEN + "√" + ChatColor.GOLD + "] - Money Utility");
         
-        display = new DisplayUtil(mobConfig.getConfig().getBoolean("Spigot1-8", false), mobConfig.getConfig().getBoolean("MoneyDrops", false), mobConfig.getConfig().getBoolean("HologramUtils", false), mobConfig.getConfig().getBoolean("TitleMoneyDrop", false), mobConfig.getConfig().getBoolean("TitleXp", false));
+        display = new DisplayUtil(compat1_8, mobConfig.getConfig().getBoolean("MoneyDrops", false), mobConfig.getConfig().getBoolean("HologramUtils", false), mobConfig.getConfig().getBoolean("TitleMoneyDrop", false), mobConfig.getConfig().getBoolean("TitleXp", false));
         info("    " + ChatColor.GOLD + "[" + ChatColor.GREEN + "√" + ChatColor.GOLD + "] - Display Utility");
 
         //Mob Arena Handler
@@ -164,6 +169,10 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
                 config.set(key, config.get(key));
             }
         }
+    }
+    
+    public static ArrayList<World> getEnabledWorlds() {
+        return worldList;
     }
 
     /**
@@ -299,11 +308,6 @@ public class ConquestiaMobs extends JavaPlugin implements CommandExecutor {
         if (!mobConfig.getConfig().contains("UseSuffix")) {
             mobConfig.getConfig().createSection("UseSuffix");
             mobConfig.getConfig().set("UseSuffix", false);
-        }
-        
-        if (!mobConfig.getConfig().contains("Spigot1-8")) {
-            mobConfig.getConfig().createSection("Spigot1-8");
-            mobConfig.getConfig().set("Spigot1-8", false);
         }
         
         if (!mobConfig.getConfig().contains("TitleXp")) {

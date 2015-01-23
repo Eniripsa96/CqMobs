@@ -70,21 +70,22 @@ public class MobSpawnHandler implements Listener {
     public static int getMobLevel(LivingEntity ent) {
         if (levelMap.containsKey(ent.getUniqueId().toString())) {
             return levelMap.get(ent.getUniqueId().toString());
-        } 
-        
-        World world = ent.getWorld();
-        LivingEntity newEnt = world.spawnCreature(ent.getLocation(), ent.getType());
-        ent.remove();
+        }
         return 0;
-        
     }
 
     //Just provide a consise way of creating the list of non exempt entites
     //Potentially might be used to allow users the option of which mobs to exempt.
     private static void addExemptEntities() {
+        
+        if (Bukkit.getServer().getVersion().contains("1.8")) {
+            Bukkit.getLogger().info("Detected 1.8! Adding compat!");
+            exempt.add(EntityType.ARMOR_STAND);
+            exempt.add(EntityType.RABBIT);
+            
+        }
         exempt.add(EntityType.BAT);
         exempt.add(EntityType.ARROW);
-        exempt.add(EntityType.ARMOR_STAND);
         exempt.add(EntityType.BOAT);
         exempt.add(EntityType.CHICKEN);
         exempt.add(EntityType.COMPLEX_PART);
@@ -116,7 +117,6 @@ public class MobSpawnHandler implements Listener {
         exempt.add(EntityType.PIG);
         exempt.add(EntityType.PLAYER);
         exempt.add(EntityType.PRIMED_TNT);
-        exempt.add(EntityType.RABBIT);
         exempt.add(EntityType.SHEEP);
         exempt.add(EntityType.SMALL_FIREBALL);
         exempt.add(EntityType.SNOWBALL);
@@ -141,7 +141,7 @@ public class MobSpawnHandler implements Listener {
     private Location getClosestSpawn(ArrayList<Location> spawnPoints, Location eventLoc) {
         ArrayList<Location> spawns = spawnPoints;
         Location closestSpawn = new Location(eventLoc.getWorld(), eventLoc.getX(), eventLoc.getY(), eventLoc.getZ());
-        int lowestDistance = 999999999; //Hard Coded for ease
+        long lowestDistance = Long.MAX_VALUE; //Hard Coded for ease
         if (!spawns.isEmpty()) {
             for (Location loc : spawns) {
                 if (loc.distanceSquared(eventLoc) < lowestDistance) {
@@ -184,6 +184,7 @@ public class MobSpawnHandler implements Listener {
         return null;
 
     }
+    
 
     /**
      * Calculates the appropriate level of the mob.
@@ -194,7 +195,7 @@ public class MobSpawnHandler implements Listener {
      * @param closestSpawn The closest spawn location.
      * @return The level of the mob.
      */
-    private int getLevel(Double distance, Location spawnLocation, String world, Location closestSpawn) {
+    private int getLevel(long distance, Location spawnLocation, String world, Location closestSpawn) {
         String closestPointName = getSpawnPointName(closestSpawn);
         int startLevel = 0;
         if (closestPointName != null) {
@@ -243,7 +244,7 @@ public class MobSpawnHandler implements Listener {
     //Event handler for the mob spawn event. Passes off necessary information off to appropriate methods.
     @EventHandler(priority = EventPriority.MONITOR)
     public void OnMobSpawn(CreatureSpawnEvent event) {
-        if (event.getCreatureType() == null) {
+        if (event.getCreatureType() == null || !ConquestiaMobs.getEnabledWorlds().contains(event.getEntity().getWorld())) {
             return;
         }
 
@@ -274,11 +275,12 @@ public class MobSpawnHandler implements Listener {
             }
 
             Location closestSpawn = getClosestSpawn(spawns, event.getLocation());
-
-            ConquestiaMobs.debug("Found closest spawn point, using " + closestSpawn.toString());
+            if (closestSpawn != null) {
+                ConquestiaMobs.debug("Found closest spawn point, using " + closestSpawn.toString());
+            }
 
             if (closestSpawn != null) {
-                int level = getLevel(closestSpawn.distance(event.getLocation()), event.getLocation(), event.getLocation().getWorld().getName(), closestSpawn);
+                int level = getLevel((long)closestSpawn.distanceSquared(event.getLocation()), event.getLocation(), event.getLocation().getWorld().getName(), closestSpawn);
                 levelMap.put(event.getEntity().getUniqueId().toString(), level);
                 healthMultiplier = mobConfig.getConfig().getDouble(event.getLocation().getWorld().getName() + ".HealthMultiplier", 0.01);
                 setName(event.getEntity(), level);

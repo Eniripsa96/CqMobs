@@ -70,6 +70,9 @@ public class MobDamageHandler implements Listener {
      */
     @EventHandler(priority = EventPriority.MONITOR)
     public void OnMobDamage(EntityDamageByEntityEvent event) {
+        if (!ConquestiaMobs.getEnabledWorlds().contains(event.getEntity().getWorld())) {
+            return;
+        }
         if (!mobConfig.getConfig().getBoolean(event.getEntity().getWorld().getName() + ".DamageModifierEnabled", false)) {
             return;
         }

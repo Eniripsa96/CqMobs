@@ -83,6 +83,10 @@ public class HeroesExperienceHandler implements Listener {
     @EventHandler
     public void onHeroMobDeath(HeroKillCharacterEvent event) {
         
+        if (!ConquestiaMobs.getEnabledWorlds().contains(event.getDefender().getEntity().getWorld())) {
+            return;
+        }
+        
         //If the killer is not a player, or if the mob was spawned from a mob spawner, we don't calculate the exp here
         if (!(event.getDefender().getEntity() instanceof Player) && !event.getDefender().getEntity().hasMetadata("Spawner")) { 
             
@@ -196,6 +200,9 @@ public class HeroesExperienceHandler implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onHeroExpChange(ExperienceChangeEvent event) {
+        if (!ConquestiaMobs.getEnabledWorlds().contains(event.getHero().getPlayer().getWorld())) {
+            return;
+        }
         if (event.getSource() == ExperienceType.KILLING && mobKillMap.containsKey(event.getHero().getPlayer().getUniqueId().toString())) {
             LivingEntity ent = mobKillMap.get(event.getHero().getPlayer().getUniqueId().toString());
             int level = getMobLevel(ent);

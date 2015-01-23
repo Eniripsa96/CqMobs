@@ -37,6 +37,9 @@ public class MobExperienceHandler implements Listener {
      */
     @EventHandler
     public void onLeveledMobDeath(EntityDeathEvent event) {
+        if (!ConquestiaMobs.getEnabledWorlds().contains(event.getEntity().getWorld())) {
+            return;
+        }
         if (event.getEntity().getCustomName() == null) {
             return;
         }

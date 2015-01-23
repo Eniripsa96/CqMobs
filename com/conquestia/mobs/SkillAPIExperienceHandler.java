@@ -44,6 +44,9 @@ public class SkillAPIExperienceHandler implements Listener {
     
     @EventHandler
     public void onExperienceGainEvent(PlayerExperienceGainEvent event) {
+        if (!ConquestiaMobs.getEnabledWorlds().contains(event.getPlayerData().getPlayer().getWorld())) {
+            return;
+        }
         if (event.isCommandExp()) {
             return;
         }
@@ -88,6 +91,9 @@ public class SkillAPIExperienceHandler implements Listener {
     
     @EventHandler(priority=EventPriority.LOWEST, ignoreCancelled=false)
     public void onEntityDeath(EntityDamageByEntityEvent event) {
+        if (!ConquestiaMobs.getEnabledWorlds().contains(event.getEntity().getWorld())) {
+            return;
+        }
         if (event.getDamager() instanceof Player && event.getEntity() instanceof LivingEntity && ((LivingEntity)event.getEntity()).getHealth() - event.getDamage() <= 0 && ((LivingEntity)event.getEntity()).getCustomName() != null && ((LivingEntity)event.getEntity()).getCustomName().contains("Lvl")) {
             mobKillMap.put(((Player)event.getDamager()).getUniqueId().toString(), (LivingEntity)event.getEntity());
         }

@@ -185,8 +185,10 @@ public class Title {
             
             IChatBaseComponent msg1 = ChatSerializer.a("");
             IChatBaseComponent msg = ChatSerializer.a(finalJSON);
-            PacketPlayOutTitle packet1 = new PacketPlayOutTitle(EnumTitleAction.TITLE, msg1, 10, 2*20, 10);
-            PacketPlayOutTitle packet = new PacketPlayOutTitle(EnumTitleAction.SUBTITLE, msg, 10, 2*20, 10);
+            PacketPlayOutTitle packet1 = new PacketPlayOutTitle(EnumTitleAction.TITLE, msg1, 1, 15, 10);
+            PacketPlayOutTitle packet = new PacketPlayOutTitle(EnumTitleAction.SUBTITLE, msg, 1, 15, 10);
+            PacketPlayOutTitle times = new PacketPlayOutTitle(EnumTitleAction.TIMES, msg1, 1, 15, 10);
+            ((CraftPlayer)player).getHandle().playerConnection.sendPacket(times); 
             ((CraftPlayer)player).getHandle().playerConnection.sendPacket(packet1); 
             ((CraftPlayer)player).getHandle().playerConnection.sendPacket(packet);
     }
